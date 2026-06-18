@@ -4,11 +4,17 @@ import { PrismaHealthAdapter } from './modules/system/infrastructure/prisma-heal
 import { RedisHealthAdapter } from './modules/system/infrastructure/redis-health.adapter.js'
 import { loadEnv } from './shared/infrastructure/config/env.js'
 import { createPrismaClient } from './shared/infrastructure/prisma/prisma.js'
+import {
+  createBullMqConnectionOptions,
+  createSystemQueue,
+  enqueueHealthSnapshot,
+} from './shared/infrastructure/queue/system.queue.js'
 import { createRedisClient } from './shared/infrastructure/redis/redis.js'
 
 const env = loadEnv()
 const prisma = createPrismaClient(env.DATABASE_URL)
 const redis = createRedisClient(env.REDIS_URL)
+const systemQueue = createSystemQueue(createBullMqConnectionOptions(env.REDIS_URL))
 
 const app = await buildApp({
   env,
@@ -16,6 +22,7 @@ const app = await buildApp({
 })
 
 app.addHook('onClose', async () => {
+  await systemQueue.close()
   await Promise.all([prisma.$disconnect(), redis.quit()])
 })
 
@@ -30,4 +37,11 @@ process.once('SIGTERM', () => void shutdown('SIGTERM'))
 await app.listen({
   host: env.HOST,
   port: env.PORT,
+})
+
+void enqueueHealthSnapshot(systemQueue, {
+  source: 'api-startup',
+  requestedAt: new Date().toISOString(),
+}).catch((error: unknown) => {
+  app.log.warn({ err: error }, 'Unable to enqueue startup health snapshot')
 })

@@ -14,11 +14,19 @@ import { createRedisClient } from './shared/infrastructure/redis/redis.js'
 const env = loadEnv()
 const prisma = createPrismaClient(env.DATABASE_URL)
 const redis = createRedisClient(env.REDIS_URL)
-const systemQueue = createSystemQueue(createBullMqConnectionOptions(env.REDIS_URL))
 
 const app = await buildApp({
   env,
   dependencies: [new PrismaHealthAdapter(prisma), new RedisHealthAdapter(redis)],
+  rateLimitRedis: redis,
+})
+const systemQueue = createSystemQueue(createBullMqConnectionOptions(env.REDIS_URL))
+
+redis.on('error', (error: unknown) => {
+  app.log.warn({ err: error }, 'Redis connection error')
+})
+systemQueue.on('error', (error: Error) => {
+  app.log.warn({ err: error }, 'BullMQ queue connection error')
 })
 
 app.addHook('onClose', async () => {

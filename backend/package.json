@@ -6,6 +6,9 @@
   "engines": {
     "node": ">=22"
   },
+  "overrides": {
+    "@hono/node-server": "^1.19.13"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "dev:worker": "tsx watch src/worker.ts",
@@ -20,6 +23,7 @@
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
     "k6:smoke": "k6 run k6/scenarios/load-smoke.js"
   },

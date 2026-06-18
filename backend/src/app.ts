@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify'
+import type { Redis } from 'ioredis'
 import { CheckReadiness } from './modules/system/application/use-cases/check-readiness.js'
 import { GetSystemInfo } from './modules/system/application/use-cases/get-system-info.js'
 import type { DependencyHealthPort } from './modules/system/application/ports/dependency-health.port.js'
@@ -15,6 +16,7 @@ import { registerSecurity } from './shared/interfaces/http/plugins/security.js'
 export interface BuildAppOptions {
   env: AppEnv
   dependencies: DependencyHealthPort[]
+  rateLimitRedis?: Redis
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -27,7 +29,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
   registerErrorHandler(app)
   registerRequestContext(app)
-  await registerSecurity(app, options.env)
+  await registerSecurity(app, options.env, options.rateLimitRedis)
   await registerOpenApi(app)
   registerMetrics(app, createMetricsRegistry(), options.env.METRICS_ENABLED)
   registerSystemRoutes(app, {
@@ -41,6 +43,5 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     checkReadiness: new CheckReadiness(options.dependencies),
   })
 
-  await app.ready()
   return app
 }

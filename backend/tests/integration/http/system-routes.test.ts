@@ -75,4 +75,15 @@ describe('system HTTP routes', () => {
     expect('/ready' in document.paths).toBe(true)
     expect('/api/v1/system/info' in document.paths).toBe(true)
   })
+
+  it('returns an app that still accepts lifecycle hooks before listen', async () => {
+    app = await buildApp({
+      env,
+      dependencies: [dependency('postgres', 'up'), dependency('redis', 'up')],
+    })
+
+    expect(() => {
+      app?.addHook('onClose', () => Promise.resolve())
+    }).not.toThrow()
+  })
 })

@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "dev:worker": "tsx watch src/worker.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
-    "start:worker": "node dist/worker.js",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "node dist/src/main.js",
+    "start:worker": "node dist/src/worker.js",
     "lint": "eslint .",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
